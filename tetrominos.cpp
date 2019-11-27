@@ -34,6 +34,10 @@ void Tetromino::make_new() {
 
 void Tetromino::move_left() {
         for (Uint8 i = 0; i < 4; ++i) {
+                if (points[i].x - 1 < 0)
+                        return;
+        }
+        for (Uint8 i = 0; i < 4; ++i) {
                 --points[i].x;
         }
 }
@@ -41,8 +45,16 @@ void Tetromino::move_left() {
 
 void Tetromino::move_right() {
         for (Uint8 i = 0; i < 4; ++i) {
+                if (points[i].x + 1 > 9)
+                        return;
+        }
+        for (Uint8 i = 0; i < 4; ++i) {
                 ++points[i].x;
         }
+}
+
+static void correct(Tetromino &t) {
+
 }
 
 void Tetromino::rotate_left() {
@@ -55,6 +67,8 @@ void Tetromino::rotate_left() {
                 points[i].x = points[0].x - y;
                 points[i].y = points[0].y + x;
         }
+
+
 }
 
 void Tetromino::rotate_right() {

@@ -1,2 +1,3 @@
 #!/bin/bash
-g++ main.cpp tetrominos.cpp -o shmetris -lSDL2
+g++ main.cpp tetrominos.cpp -o shmetris -lSDL2 -fno-exceptions -fno-rtti
+ 
