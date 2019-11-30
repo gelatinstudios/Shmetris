@@ -28,10 +28,17 @@ struct GameData {
         Bag bag;
 };
 
+struct SoundEffect {
+        SDL_AudioDeviceID id;
+        Uint8 *data;
+        Uint32 len;
+};
+
 bool handle(GameData &data) {
         bool quit = 0;
         SDL_Event event;
         while(SDL_PollEvent(&event)) {
+                //TODO: add hard-drops
                 if (event.type == SDL_QUIT) {
                         quit = 1;
                 } else if (event.type == SDL_KEYDOWN) {
@@ -56,13 +63,10 @@ bool handle(GameData &data) {
                 }
         }
 
-        // const Uint8 *state = SDL_GetKeyboardState(0);
-        // if (state[SDL_SCANCODE_DOWN]) timer = 0;
-
         return quit;
 }
 
-void update(GameData &data) {
+void update(GameData &data, SoundEffect sound) {
         //move down
         if (!data.timer) {
                 for (Uint8 i = 0; i < 4; ++i) {
@@ -80,6 +84,7 @@ void update(GameData &data) {
         } else --data.timer;
 
         //line deletion
+        bool lines_deleted = 0;
         for (Uint8 i = 0; i < 20; ++i) {
                 bool b = 1;
                 for (Uint8 j = 0; j < 10; ++j) {
@@ -89,11 +94,14 @@ void update(GameData &data) {
                         }
                 }
 
-                if (!b) continue;
-                for (Uint8 j = i * 10 - 1; j < i * 10; --j) {
-                        data.playfield[j + 10] = data.playfield[j];
+                if (b) {
+                        lines_deleted = 1;
+                        for (Uint8 j = i * 10 - 1; j < i * 10; --j) {
+                                data.playfield[j + 10] = data.playfield[j];
+                        }
                 }
         }
+        if (lines_deleted) SDL_QueueAudio(sound.id, sound.data, sound.len);
 }
 
 void render(SDL_Renderer *rend, SDL_Texture *playfield_text, GameData &data) {
@@ -118,7 +126,7 @@ void render(SDL_Renderer *rend, SDL_Texture *playfield_text, GameData &data) {
 }
 
 int main() {
-        SDL_Init(SDL_INIT_VIDEO);
+        SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO);
 
         SDL_Window *win = SDL_CreateWindow("Shmetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 200, 400, 0);
         SDL_Renderer *rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_PRESENTVSYNC);
@@ -130,18 +138,27 @@ int main() {
         data.bag.rng_state.a = SDL_GetPerformanceCounter();
         data.bag.shuffle();
         data.tetromino.make_new(data.bag);
+        data.timer = 10;
 
         SDL_Texture *playfield_text = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, 10, 20);
 
-        data.timer = 10;
+        SoundEffect sound = {};
+
+        SDL_AudioSpec spec = {};
+        SDL_LoadWAV("cool_sound_effect.wav", &spec, &sound.data, &sound.len);
+        int devices = SDL_GetNumAudioDevices(0);
+        sound.id = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0), 0, &spec, &spec, SDL_AUDIO_ALLOW_ANY_CHANGE);
+        SDL_PauseAudioDevice(sound.id, 0);
 
         bool quit = 0;
         while(!quit) {
                 quit = handle(data);
-                update(data);
+                update(data, sound);
                 render(rend, playfield_text, data);
         }
 
+        SDL_CloseAudioDevice(sound.id);
+        SDL_FreeWAV(sound.data);
         SDL_DestroyRenderer(rend);
         SDL_DestroyWindow(win);
         SDL_Quit();
