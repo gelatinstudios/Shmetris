@@ -118,6 +118,8 @@ void render(SDL_Renderer *rend, SDL_Texture *playfield_text, GameData &data) {
 }
 
 int main() {
+        SDL_Init(SDL_INIT_VIDEO);
+
         SDL_Window *win = SDL_CreateWindow("Shmetris", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, 200, 400, 0);
         SDL_Renderer *rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_PRESENTVSYNC);
         SDL_RenderSetLogicalSize(rend, 10, 20);
