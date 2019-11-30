@@ -1,12 +1,11 @@
 
-#include <cstdlib>
 
 #include <SDL2/SDL.h>
 
 #define SDL_ASSERT_LEVEL 2
 
-#include "tetrominos.hpp"
 #include "shmetris_math.hpp"
+#include "tetrominos.hpp"
 
 
 #ifdef SH_DEBUG
@@ -26,6 +25,7 @@ struct GameData {
         Tetromino tetromino;
         Uint32 playfield[10*20];
         Uint8 timer;
+        Bag bag;
 };
 
 bool handle(GameData &data) {
@@ -70,7 +70,7 @@ void update(GameData &data) {
                         const bool b = data.playfield[coord_to_index(data.tetromino.points[i].x, data.tetromino.points[i].y + 1)];
                         if (data.tetromino.points[i].y + 1 >= 20 || b) {
                                 data.tetromino.blit_to_playfield(data.playfield);
-                                data.tetromino.make_new();
+                                data.tetromino.make_new(data.bag);
                                 break;
                         }
                 }
@@ -122,11 +122,13 @@ int main() {
         SDL_Renderer *rend = SDL_CreateRenderer(win, -1, SDL_RENDERER_PRESENTVSYNC);
         SDL_RenderSetLogicalSize(rend, 10, 20);
 
-        srand(SDL_GetPerformanceCounter());
-
         GameData data = {};
+        for (Uint8 i = 0; i < 7; ++i)
+                data.bag.types[i] = i;
+        data.bag.rng_state.a = SDL_GetPerformanceCounter();
+        data.bag.shuffle();
+        data.tetromino.make_new(data.bag);
 
-        data.tetromino.make_new();
         SDL_Texture *playfield_text = SDL_CreateTexture(rend, SDL_PIXELFORMAT_RGBA32, SDL_TEXTUREACCESS_STATIC, 10, 20);
 
         data.timer = 10;

@@ -23,9 +23,23 @@ const Uint32 rgba_colors[] = {
         [TYPE_Z] = 0xFF0000FF //red
 };
 
-void Tetromino::make_new() {
-        //TODO:  implement "bag" system
-        type = rng(7);
+void Bag::shuffle() {
+        xorshift32_state *const state = &rng_state;
+        for (Uint8 i = 6; i >= 1; --i) {
+                const Uint8 j = rng(i, state);
+                const Uint8 tmp = types[j];
+                types[j] = types[i];
+                types[i] = tmp;
+        }
+        index = 0;
+}
+
+void Tetromino::make_new(Bag &bag) {
+        type = bag.types[bag.index];
+        if (bag.index == 6) {
+                bag.shuffle();
+        } else ++bag.index;
+
         for (Uint8 i = 0; i < 4; ++i) {
                 points[i].x = shapes[type][i].x;
                 points[i].y = shapes[type][i].y;
