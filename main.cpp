@@ -32,6 +32,7 @@ struct SoundEffect {
         SDL_AudioDeviceID id;
         Uint8 *data;
         Uint32 len;
+        bool fail;
 };
 
 bool handle(GameData &data) {
@@ -101,7 +102,8 @@ void update(GameData &data, SoundEffect sound) {
                         }
                 }
         }
-        if (lines_deleted) SDL_QueueAudio(sound.id, sound.data, sound.len);
+        if (lines_deleted && !sound.fail)
+                SDL_QueueAudio(sound.id, sound.data, sound.len);
 }
 
 void render(SDL_Renderer *rend, SDL_Texture *playfield_text, GameData &data) {
@@ -144,16 +146,20 @@ int main() {
         SoundEffect sound = {};
 
         SDL_AudioSpec spec = {};
-        SDL_LoadWAV("cool_sound_effect.wav", &spec, &sound.data, &sound.len);
-        int devices = SDL_GetNumAudioDevices(0);
-        sound.id = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0), 0, &spec, &spec, SDL_AUDIO_ALLOW_ANY_CHANGE);
-        SDL_PauseAudioDevice(sound.id, 0);
+        if(SDL_LoadWAV("cool_sound_effect.wav", &spec, &sound.data, &sound.len)) {
+                int devices = SDL_GetNumAudioDevices(0);
+                sound.id = SDL_OpenAudioDevice(SDL_GetAudioDeviceName(0,0), 0, &spec, &spec, SDL_AUDIO_ALLOW_ANY_CHANGE);
+                SDL_PauseAudioDevice(sound.id, 0);
+        } else {
+                sound.fail = 1;
+                SDL_LogError(SDL_LOG_CATEGORY_APPLICATION, "sound effect failed to load:\n\t%s\n", SDL_GetError());
+        }
 
         Uint32 starting_tick = 0;
         bool quit = 0;
         while(!quit) {
                 starting_tick = SDL_GetTicks();
-                
+
                 quit = handle(data);
                 update(data, sound);
                 render(rend, playfield_text, data);
